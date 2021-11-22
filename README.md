@@ -1,0 +1,1 @@
+Hello everyone! This repository contains flask project (REST-API service for managing film library).
