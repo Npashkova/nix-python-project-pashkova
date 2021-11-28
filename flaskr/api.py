@@ -3,14 +3,18 @@ from flask import request
 
 from . import api, db
 
-from .models import Genres, Directors
+from .models import Genres, Directors, Films
 
-from .schemas import GenresSchema, DirectorsSchema
+from .schemas import GenresSchema, DirectorsSchema, FilmsSchema
+
+from .parsing import films_parsing
 
 genre_schema = GenresSchema()
 genres_schema = GenresSchema(many=True)
 director_schema = DirectorsSchema()
 directors_schema = DirectorsSchema(many=True)
+film_schema = FilmsSchema()
+films_schema = FilmsSchema(many=True)
 
 
 @api.route('/genres')
@@ -95,3 +99,55 @@ class DirectorApi(Resource):
             return {}, 204
         else:
             return {'message': "Director not found"}, 404
+
+
+@api.route('/films')
+class FilmListApi(Resource):
+    def get(self):
+        films = Films.query.order_by(Films.title).all()
+        return films_schema.dump(films).data
+
+    def post(self):
+        user_input = films_parsing(request.json)
+        film = film_schema.load(user_input, session=db.session, transient=True).data
+        directors = Directors.query.filter(Directors.director_id == request.json.get('directors')).one_or_none()
+        genres = Genres.query.filter(Genres.genre_id == request.json.get('genres')).one_or_none()
+        film.directors = directors
+        film.genres = genres
+        db.session.add(film)
+        db.session.commit()
+        return film_schema.dump(film).data, 201
+
+
+@api.route('/films/{film_id}')
+class FilmApi(Resource):
+    def get(self, film_id):
+        film = Films.query.filter(Films.film_id == film_id).one_or_none()
+        if film is not None:
+            return films_schema.dump(film).data
+        else:
+            return {'message': "Film not found"}, 404
+
+    def put(self, film_id):
+        film = Films.query.filter(Films.film_id == film_id).one_or_none()
+        if film is not None:
+            user_input = films_parsing(request.json)
+            film = film_schema.load(user_input, instance=film, session=db.session).data
+            directors = Directors.query.filter(Directors.director_id == request.json.get('directors')).one_or_none()
+            genres = Genres.query.filter(Genres.genre_id == request.json.get('genres')).one_or_none()
+            film.directors = directors
+            film.genres = genres
+            db.session.add(film)
+            db.session.commit()
+            return film_schema.dump(film).data, 201
+        else:
+            return {'message': "Film not found"}, 404
+
+    def delete(self, film_id):
+        film = Films.query.filter(Films.film_id == film_id).one_or_none()
+        if film is not None:
+            db.session.delete(film)
+            db.session.commit()
+            return {}, 204
+        else:
+            return {'message': "Film not found"}, 404
