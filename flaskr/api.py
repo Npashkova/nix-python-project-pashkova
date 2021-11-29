@@ -3,9 +3,9 @@ from flask import request
 
 from . import api, db
 
-from .models import Genres, Directors, Films
+from .models import Genres, Directors, Films, Users
 
-from .schemas import GenresSchema, DirectorsSchema, FilmsSchema
+from .schemas import GenresSchema, DirectorsSchema, FilmsSchema, UsersSchema
 
 from .parsing import films_parsing
 
@@ -15,6 +15,8 @@ director_schema = DirectorsSchema()
 directors_schema = DirectorsSchema(many=True)
 film_schema = FilmsSchema()
 films_schema = FilmsSchema(many=True)
+user_schema = UsersSchema()
+users_schema = UsersSchema(many=True)
 
 
 @api.route('/genres')
@@ -151,3 +153,39 @@ class FilmApi(Resource):
             return {}, 204
         else:
             return {'message': "Film not found"}, 404
+
+
+@api.route('/registration')
+class UsersApi(Resource):
+    def get(self):
+        users = Users.query.all()
+        return users_schema.dump(users).data
+
+    def post(self):
+        user = Users.query.filter(Users.login == request.json.get("login")).one_or_none()
+        if user:
+            return {"message": f"User with login: {request.json.get('login')} exists!"}
+        else:
+            user = user_schema.load(request.json, session=db.session)
+            db.session.add(user)
+            db.session.commit()
+            return user_schema.dump(user).data, 201
+
+    def put(self):
+        user = Users.query.filter(Users.login == request.json.get("login")).one_or_none()
+        if user:
+            user = user_schema.load(request.json, instance=user, session=db.session)
+            db.session.add(user)
+            db.session.commit()
+            return user_schema.dump(user).data, 201
+        else:
+            return {"message": f"User with login: {request.json.get('login')} not found"}, 404
+
+    def delete(self):
+        user = Users.query.filter(Users.login == request.json.get("login")).one_or_none()
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            return {}, 204
+        else:
+            return {"message": f"User with login: {request.json.get('login')} not found"}, 404

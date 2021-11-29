@@ -1,7 +1,7 @@
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from marshmallow_sqlalchemy.fields import Nested
 
-from .models import Genres, Directors, Films
+from .models import Genres, Directors, Films, Users
 
 
 class GenresSchema(SQLAlchemyAutoSchema):
@@ -20,3 +20,9 @@ class FilmsSchema(SQLAlchemyAutoSchema):
 
     genres = Nested(GenresSchema, many=True)
     directors = Nested(DirectorsSchema, many=True)
+
+
+class UsersSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Users
+        load_only = "password"

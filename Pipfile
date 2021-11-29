@@ -11,6 +11,7 @@ flask-migrate = "*"
 flask-restx = "*"
 flask-marshmallow = "*"
 marshmallow-sqlalchemy = "*"
+flask-login = "*"
 
 [dev-packages]
 
