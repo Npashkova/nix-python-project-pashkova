@@ -1,7 +1,19 @@
 from flaskr import db
 
+from werkzeug.security import generate_password_hash
+from flask_login import UserMixin
+from . import login_manager
 
-class Users(db.Model):
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Users.get(user_id)
+
+
+login_manager.login_view = "users.login"
+
+
+class Users(db.Model, UserMixin):
     user_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     surname = db.Column(db.String(80), nullable=False)
@@ -12,6 +24,9 @@ class Users(db.Model):
 
     def __repr__(self):
         return f'User: {self.user_id}, name: {self.name}, is_admin: {self.is_admin}'
+
+    def set_password(self, password):
+        self.password = generate_password_hash(password)
 
 
 films_genres = db.Table('films_genres',
